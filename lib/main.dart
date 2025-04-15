@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:nmea/nmea.dart' as nmea;
 import 'package:sail_polar/nmea_sentence/temperature_sentence.dart';
-
+import 'package:sail_polar/nmea_sentence/apparent_wind_sentence.dart';
 void main() {
   runApp(const MainApp());
 }
@@ -31,8 +31,14 @@ class MainApp extends StatelessWidget {
   }
 
   void _handleButtonClick() {
-    final decoder =
-        nmea.NmeaDecoder()..registerCustomChecksumSentence(
+    final decoder = nmea.NmeaDecoder();
+
+    decoder.registerCustomChecksumSentence(
+          ApparentWindSentence.id,
+          (line) => ApparentWindSentence(raw: line),
+        );
+    decoder.
+      registerCustomChecksumSentence(
           TemperatureSentence.id,
           (line) => TemperatureSentence(raw: line),
         );
@@ -53,7 +59,16 @@ class MainApp extends StatelessWidget {
 
         if (sentence is TemperatureSentence) {
           print('Current temperature ${sentence.temperature} °C');
+        } else if (sentence is ApparentWindSentence) {
+          print('Current apparent wind angle ${sentence.angle}°');
+          print('Current tack direction ${sentence.tack}');
+          print('Current apparent wind speed ${sentence.speed} knots');
+          print('Current apparent wind speed ${sentence.speedMs} m/s');
+          print('Current apparent wind speed ${sentence.speedkph} kph');
+        } else {
+          print('Unknown sentence: $sentence');
         }
+        print('----------------------------------');
       });
     });
   }
