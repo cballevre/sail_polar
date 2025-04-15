@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 
+import 'package:nmea/nmea.dart' as nmea;
+import 'package:sail_polar/nmea_sentence/temperature_sentence.dart';
+
 void main() {
   runApp(const MainApp());
 }
@@ -28,6 +31,12 @@ class MainApp extends StatelessWidget {
   }
 
   void _handleButtonClick() {
+    final decoder =
+        nmea.NmeaDecoder()..registerCustomChecksumSentence(
+          TemperatureSentence.id,
+          (line) => TemperatureSentence(raw: line),
+        );
+
     RawDatagramSocket.bind(InternetAddress.anyIPv4, 2000).then((
       RawDatagramSocket socket,
     ) {
@@ -39,6 +48,12 @@ class MainApp extends StatelessWidget {
 
         String message = new String.fromCharCodes(d.data).trim();
         print('Datagram from ${d.address.address}:${d.port}: ${message}');
+
+        final sentence = decoder.decode(message);
+
+        if (sentence is TemperatureSentence) {
+          print('Current temperature ${sentence.temperature} °C');
+        }
       });
     });
   }

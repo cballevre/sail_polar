@@ -123,6 +123,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.16.0"
+  nmea:
+    dependency: "direct main"
+    description:
+      name: nmea
+      sha256: a49fc8682bbb6285a9b3cb8d2a37b4724d6f36e2d6dd2f1c0824602a48a23b50
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.3.2"
   path:
     dependency: transitive
     description:
