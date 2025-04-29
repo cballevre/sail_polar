@@ -3,8 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:sail_polar/features/navigation/navigation_page.dart';
 import 'package:sail_polar/features/sessions/sessions_page.dart';
 import 'package:sail_polar/features/settings/settings_page.dart';
+import 'package:sail_polar/core/database/app_database.dart';
 
-void main() {
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final database = AppDatabase();
+
+  await database.into(database.sessions).insert(SessionsCompanion.insert(
+        name: 'todo: finish drift setup',
+      ));
+  List<Session> allItems = await database.select(database.sessions).get();
+
+  print('items in database: $allItems');
+
   runApp(const MainApp());
 }
 
