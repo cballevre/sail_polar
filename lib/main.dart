@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
 
+import 'package:provider/provider.dart';
 import 'package:sail_polar/features/navigation/navigation_page.dart';
-import 'package:sail_polar/features/sessions/sessions_page.dart';
+import 'package:sail_polar/features/session/presentation/session_list_screen.dart';
 import 'package:sail_polar/features/settings/settings_page.dart';
 import 'package:sail_polar/core/database/app_database.dart';
+import 'package:sail_polar/features/session/data/session_dao.dart';
+import 'package:sail_polar/features/session/domain/session_repository.dart';
+import 'package:sail_polar/features/session/presentation/session_view_model.dart';
 
-void main() async{
-  WidgetsFlutterBinding.ensureInitialized();
-
+void main() {
   final database = AppDatabase();
+  final sessionRepository = SessionRepository(sessionDao: SessionDao(database));
 
-  await database.into(database.sessions).insert(SessionsCompanion.insert(
-        name: 'todo: finish drift setup',
-      ));
-  List<Session> allItems = await database.select(database.sessions).get();
-
-  print('items in database: $allItems');
-
-  runApp(const MainApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => SessionViewModel(repository: sessionRepository),
+        ),
+      ],
+      child: MainApp(),
+    ),
+  );
 }
 
 class MainApp extends StatelessWidget {
@@ -41,7 +46,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
 
   final List<Widget> _pages = [
     NavigationPage(),
-    SessionsPage(),
+    SessionListScreen(),
     SettingsPage()
   ];
 

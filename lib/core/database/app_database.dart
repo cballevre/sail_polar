@@ -2,6 +2,9 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'package:sail_polar/features/session/data/session_dao.dart';
+
+
 // Définir ici toutes les tables de l'app
 part 'app_database.g.dart';
 
@@ -12,7 +15,7 @@ class Sessions extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-@DriftDatabase(tables: [Sessions])
+@DriftDatabase(tables: [Sessions], daos: [SessionDao])
 class AppDatabase extends _$AppDatabase {
   // After generating code, this class needs to define a `schemaVersion` getter
   // and a constructor telling drift where the database should be stored.
