@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
+import 'package:sail_polar/core/task/udp_foreground_task.dart';
 import 'package:sail_polar/features/navigation/navigation_page.dart';
 import 'package:sail_polar/features/session/presentation/session_list_screen.dart';
 import 'package:sail_polar/features/settings/settings_page.dart';
@@ -8,10 +9,15 @@ import 'package:sail_polar/core/database/app_database.dart';
 import 'package:sail_polar/features/session/data/session_dao.dart';
 import 'package:sail_polar/features/session/domain/session_repository.dart';
 import 'package:sail_polar/features/session/presentation/session_view_model.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+
 
 void main() {
   final database = AppDatabase();
   final sessionRepository = SessionRepository(sessionDao: SessionDao(database));
+
+  // Initialize port for communication between TaskHandler and UI.
+  FlutterForegroundTask.initCommunicationPort();
 
   runApp(
     MultiProvider(
