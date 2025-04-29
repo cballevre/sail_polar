@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'session_view_model.dart';
 import 'session_detail_screen.dart';
+import 'session_recording_screen.dart';
 
 class SessionListScreen extends StatelessWidget {
   @override
@@ -23,7 +24,9 @@ class SessionListScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => SessionDetailScreen(session: session)),
+                    MaterialPageRoute(
+                      builder: (_) => SessionDetailScreen(session: session),
+                    ),
                   );
                 },
               );
@@ -33,11 +36,15 @@ class SessionListScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => SessionRecordingScreen()),
+          );
           // Simule l'ajout d'une session
-          await viewModel.addSession('Nouvelle session ${DateTime.now()}');
+          // await viewModel.addSession('Nouvelle session ${DateTime.now()}');
         },
         label: Text('Démarrer un enregistrement'),
-        icon: Icon(Icons.add),
+        icon: Icon(Icons.play_arrow),
       ),
     );
   }
