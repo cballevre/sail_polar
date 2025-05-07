@@ -64,12 +64,6 @@ class _SessionRecordingScreenState extends State<SessionRecordingScreen> {
     _taskDataListenable.value = data;
   }
 
-  void _incrementCount() {
-    FlutterForegroundTask.sendDataToTask(
-      UDPForegroundTask.incrementCountCommand,
-    );
-  }
-
   @override
   void initState() {
     super.initState();
@@ -124,21 +118,11 @@ class _SessionRecordingScreenState extends State<SessionRecordingScreen> {
       child: Scaffold(
         appBar: AppBar(title: const Text('Recording Session')),
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                isRecording
-                    ? 'Recording in progress...'
-                    : 'Press the button to start recording.',
-                style: TextStyle(fontSize: 18),
-              ),
-              if (isRecording)
-                ElevatedButton(
-                  onPressed: _incrementCount,
-                  child: Text('Increment Count'),
-                ),
-            ],
+          child: Text(
+            isRecording
+                ? 'Recording in progress...'
+                : 'Press the button to start recording.',
+            style: TextStyle(fontSize: 18),
           ),
         ),
         floatingActionButton: FloatingActionButton.extended(

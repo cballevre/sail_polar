@@ -1,4 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+
+import 'package:nmea/nmea.dart' as nmea;
+import 'package:sail_polar/core/parser/temperature_sentence.dart';
+import 'package:sail_polar/core/parser/apparent_wind_sentence.dart';
+import 'package:sail_polar/core/parser/water_speed.dart';
 
 @pragma('vm:entry-point')
 void startCallback() {
@@ -8,51 +15,80 @@ void startCallback() {
 
 // --- Foreground Task Handler ---
 class UDPForegroundTask extends TaskHandler {
-  static const String incrementCountCommand = 'incrementCount';
-
-  int _count = 0;
-
-  void _incrementCount() {
-    print("Incrementing count: $_count");
-    _count++;
-
-    // Update notification content.
-    FlutterForegroundTask.updateService(
-      notificationTitle: 'Hello MyTaskHandler :)',
-      notificationText: 'count: $_count',
-    );
-
-    // Send data to main isolate.
-    FlutterForegroundTask.sendDataToMain(_count);
-  }
+  RawDatagramSocket? _udpSocket;
+  static const int udpPort = 2000;
 
   // Called when the task is started.
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     print('onStart(starter: ${starter.name})');
-    _incrementCount();
+    await _startListening();
   }
 
-  // Called based on the eventAction set in ForegroundTaskOptions.
-  @override
-  void onRepeatEvent(DateTime timestamp) {
-    print('onRepeatEvent(timestamp: $timestamp)');
-    _incrementCount();
+  Future<void> _startListening() async {
+    try {
+      _udpSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, udpPort);
+      print('Listening for UDP packets on port $udpPort');
+
+      _udpSocket?.listen((RawSocketEvent event) {
+        if (event == RawSocketEvent.read) {
+          final datagram = _udpSocket?.receive();
+          if (datagram != null) {
+            final message = String.fromCharCodes(datagram.data);
+            print('Received UDP message: $message');
+            _decodeNMEA(message);
+          }
+        }
+      });
+    } catch (e) {
+      print('Failed to bind UDP socket: $e');
+    }
+  }
+
+  void _decodeNMEA(String message) {
+    final decoder = nmea.NmeaDecoder();
+
+    decoder.registerCustomChecksumSentence(
+      ApparentWindSentence.id,
+      (line) => ApparentWindSentence(raw: line),
+    );
+    decoder.registerCustomChecksumSentence(
+      TemperatureSentence.id,
+      (line) => TemperatureSentence(raw: line),
+    );
+    decoder.registerCustomChecksumSentence(
+      WaterSpeedSentence.id,
+      (line) => WaterSpeedSentence(raw: line),
+    );
+
+    final sentence = decoder.decode(message);
+
+    if (sentence is TemperatureSentence) {
+      print('Current temperature ${sentence.temperature} °C');
+    } else if (sentence is ApparentWindSentence) {
+      print('Current apparent wind angle ${sentence.angle}°');
+      print('Current tack direction ${sentence.tack}');
+      print('Current apparent wind speed ${sentence.speed} knots');
+      print('Current apparent wind speed ${sentence.speedMs} m/s');
+      print('Current apparent wind speed ${sentence.speedkph} kph');
+    } else if(sentence is WaterSpeedSentence) {
+      print('Current boat speed thought water is ${sentence.waterSpeed} knots');
+    } else {
+      print('Unknown sentence: $sentence');
+    }
   }
 
   // Called when the task is destroyed.
   @override
   Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {
     print('onDestroy(isTimeout: $isTimeout)');
+    _udpSocket?.close();
   }
 
   // Called when data is sent using `FlutterForegroundTask.sendDataToTask`.
   @override
   void onReceiveData(Object data) {
     print('onReceiveData: $data');
-    if (data == incrementCountCommand) {
-      _incrementCount();
-    }
   }
 
   // Called when the notification button is pressed.
@@ -71,5 +107,12 @@ class UDPForegroundTask extends TaskHandler {
   @override
   void onNotificationDismissed() {
     print('onNotificationDismissed');
+  }
+
+  @override
+  void onRepeatEvent(DateTime timestamp) {
+     print('onRepeatEvent');
+    // _udpSocket?.close();
+    // _startListening();
   }
 }
