@@ -15,7 +15,17 @@ class Sessions extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-@DriftDatabase(tables: [Sessions], daos: [SessionDao])
+@DataClassName('NavigationSample')
+class NavigationSamples extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get sessionId => integer().customConstraint('REFERENCES sessions(id) NOT NULL')();
+  DateTimeColumn get timestamp => dateTime().withDefault(currentDateAndTime)();
+  RealColumn get boatSpeed => real()();
+  RealColumn get trueWindSpeed => real()();
+  RealColumn get trueWindAngle => real()();
+}
+
+@DriftDatabase(tables: [Sessions, NavigationSamples], daos: [SessionDao])
 class AppDatabase extends _$AppDatabase {
   // After generating code, this class needs to define a `schemaVersion` getter
   // and a constructor telling drift where the database should be stored.
