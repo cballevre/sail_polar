@@ -1,75 +1,92 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 
-import 'package:nmea/nmea.dart' as nmea;
-import 'package:sail_polar/nmea_sentence/temperature_sentence.dart';
-import 'package:sail_polar/nmea_sentence/apparent_wind_sentence.dart';
+import 'package:provider/provider.dart';
+import 'package:sail_polar/core/task/udp_foreground_task.dart';
+import 'package:sail_polar/features/navigation/navigation_page.dart';
+import 'package:sail_polar/features/session/data/navigation_sample_dao.dart';
+import 'package:sail_polar/features/session/domain/navigation_sample_repository.dart';
+import 'package:sail_polar/features/session/presentation/session_list_screen.dart';
+import 'package:sail_polar/features/settings/settings_page.dart';
+import 'package:sail_polar/core/database/app_database.dart';
+import 'package:sail_polar/features/session/data/session_dao.dart';
+import 'package:sail_polar/features/session/domain/session_repository.dart';
+import 'package:sail_polar/features/session/presentation/session_view_model.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+
+
 void main() {
-  runApp(const MainApp());
+  final database = AppDatabase();
+  final sessionRepository = SessionRepository(sessionDao: SessionDao(database));
+  final navigationSampleRepository = NavigationSampleRepository(
+  navigationSampleDao: NavigationSampleDao(database),
+);
+
+  // Initialize port for communication between TaskHandler and UI.
+  FlutterForegroundTask.initCommunicationPort();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => SessionViewModel(repository: sessionRepository),
+        ),
+      ],
+      child: MainApp(),
+    ),
+  );
 }
 
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('Hello World!'),
-              ElevatedButton(
-                onPressed: _handleButtonClick,
-                child: const Text('Click Me'),
-              ),
-            ],
-          ),
-        ),
-      ),
+      home: BottomNavBar(),
     );
   }
+}
 
-  void _handleButtonClick() {
-    final decoder = nmea.NmeaDecoder();
+class BottomNavBar extends StatefulWidget {
+  @override
+  _BottomNavBarState createState() => _BottomNavBarState();
+}
 
-    decoder.registerCustomChecksumSentence(
-          ApparentWindSentence.id,
-          (line) => ApparentWindSentence(raw: line),
-        );
-    decoder.
-      registerCustomChecksumSentence(
-          TemperatureSentence.id,
-          (line) => TemperatureSentence(raw: line),
-        );
+class _BottomNavBarState extends State<BottomNavBar> {
+  int _currentIndex = 0;
 
-    RawDatagramSocket.bind(InternetAddress.anyIPv4, 2000).then((
-      RawDatagramSocket socket,
-    ) {
-      print('Datagram socket ready to receive');
-      print('${socket.address.address}:${socket.port}');
-      socket.listen((RawSocketEvent e) {
-        Datagram? d = socket.receive();
-        if (d == null) return;
+  final List<Widget> _pages = [
+    NavigationPage(),
+    SessionListScreen(),
+    SettingsPage()
+  ];
 
-        String message = new String.fromCharCodes(d.data).trim();
-        print('Datagram from ${d.address.address}:${d.port}: ${message}');
-
-        final sentence = decoder.decode(message);
-
-        if (sentence is TemperatureSentence) {
-          print('Current temperature ${sentence.temperature} °C');
-        } else if (sentence is ApparentWindSentence) {
-          print('Current apparent wind angle ${sentence.angle}°');
-          print('Current tack direction ${sentence.tack}');
-          print('Current apparent wind speed ${sentence.speed} knots');
-          print('Current apparent wind speed ${sentence.speedMs} m/s');
-          print('Current apparent wind speed ${sentence.speedkph} kph');
-        } else {
-          print('Unknown sentence: $sentence');
-        }
-        print('----------------------------------');
-      });
-    });
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list),
+            label: 'Sessions',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+      ),
+    );
   }
 }
